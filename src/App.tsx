@@ -25,7 +25,7 @@ function App() {
 
   async function microphoneClick() {
     const localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
+      // video: true,
       audio: true,
     });
     const remoteStream = new MediaStream();
@@ -151,11 +151,11 @@ function App() {
       <div className="videos">
         <span>
           <h3>Local Stream</h3>
-          <video id="webcamAudio" autoPlay playsInline muted />
+          <audio id="webcamAudio" autoPlay playsInline muted />
         </span>
         <span>
           <h3>Remote Stream</h3>
-          <video id="remoteAudio" autoPlay playsInline />
+          <audio id="remoteAudio" autoPlay playsInline />
         </span>
       </div>
       <button id="webcamButton" onClick={microphoneClick}>
