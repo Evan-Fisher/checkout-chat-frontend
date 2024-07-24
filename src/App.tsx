@@ -179,6 +179,7 @@ function App() {
       ) : (
         <div>
           <p>Hello! CUstomer support</p>
+          <input value={callId} onChange={(e) => setCallId(e.target.value)} />
           <button onClick={answerClick}>PICK UP PHONE</button>
         </div>
       )}
