@@ -182,6 +182,8 @@ function App() {
           <p>Hello! CUstomer support</p>
           <input value={callId} onChange={(e) => setCallId(e.target.value)} />
           <button onClick={answerClick}>PICK UP PHONE</button>
+          <audio id="webcamAudio" autoPlay playsInline muted />
+          <audio id="remoteAudio" autoPlay playsInline />
         </div>
       )}
     </main>
