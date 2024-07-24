@@ -120,6 +120,7 @@ function App() {
   }
 
   async function answerClick() {
+    await microphoneClick();
     try {
       const callDoc = firestore.collection("calls").doc(callId);
       const answerCandidates = callDoc.collection("answerCandidates");
