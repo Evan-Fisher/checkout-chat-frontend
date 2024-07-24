@@ -120,40 +120,44 @@ function App() {
   }
 
   async function answerClick() {
-    const callDoc = firestore.collection("calls").doc(callId);
-    const answerCandidates = callDoc.collection("answerCandidates");
-    const offerCandidates = callDoc.collection("offerCandidates");
+    try {
+      const callDoc = firestore.collection("calls").doc(callId);
+      const answerCandidates = callDoc.collection("answerCandidates");
+      const offerCandidates = callDoc.collection("offerCandidates");
 
-    pc.current.onicecandidate = (event: any) => {
-      event.candidate && answerCandidates.add(event.candidate.toJSON());
-    };
+      pc.current.onicecandidate = (event: any) => {
+        event.candidate && answerCandidates.add(event.candidate.toJSON());
+      };
 
-    const callData = (await callDoc.get()).data();
+      const callData = (await callDoc.get()).data();
 
-    const offerDescription = callData?.offer;
-    await pc.current.setRemoteDescription(
-      new RTCSessionDescription(offerDescription)
-    );
+      const offerDescription = callData?.offer;
+      await pc.current.setRemoteDescription(
+        new RTCSessionDescription(offerDescription)
+      );
 
-    const answerDescription = await pc.current.createAnswer();
-    await pc.current.setLocalDescription(answerDescription);
+      const answerDescription = await pc.current.createAnswer();
+      await pc.current.setLocalDescription(answerDescription);
 
-    const answer = {
-      type: answerDescription.type,
-      sdp: answerDescription.sdp,
-    };
+      const answer = {
+        type: answerDescription.type,
+        sdp: answerDescription.sdp,
+      };
 
-    await callDoc.update({ answer });
+      await callDoc.update({ answer });
 
-    offerCandidates.onSnapshot((snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        console.log(change);
-        if (change.type === "added") {
-          let data = change.doc.data();
-          pc.current.addIceCandidate(new RTCIceCandidate(data));
-        }
+      offerCandidates.onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          console.log(change);
+          if (change.type === "added") {
+            let data = change.doc.data();
+            pc.current.addIceCandidate(new RTCIceCandidate(data));
+          }
+        });
       });
-    });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return (
