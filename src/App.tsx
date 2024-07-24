@@ -35,16 +35,16 @@ function App() {
       const remoteStream = new MediaStream();
 
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      // const {
-      //   data: { iceServers },
-      // } = await axios.get("https://sellme.onrender.com/ice");
+      const {
+        data: { iceServers },
+      } = await axios.get("https://sellme.onrender.com/ice");
       // const {
       //   data: { iceServers },
       // } = await axios.get("http://localhost:3001/ice");
       // //
-      const {
-        data: { iceServers },
-      } = await axios.get("https://1d8f-70-113-41-166.ngrok-free.app/");
+      // const {
+      //   data: { iceServers },
+      // } = await axios.get("https://1d8f-70-113-41-166.ngrok-free.app/");
       pc.current = new RTCPeerConnection({ iceServers });
 
       // Push tracks from local stream to peer connection
