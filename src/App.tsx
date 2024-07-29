@@ -330,7 +330,7 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
     ) : (
       <text className="text-offWhite font-semibold text-xs">
         <span className="text-brightGreen font-bold text-xs">
-          Have a question?
+          Looking to buy?
         </span>{" "}
         Call us live
       </text>
