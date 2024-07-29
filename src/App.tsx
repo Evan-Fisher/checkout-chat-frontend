@@ -25,9 +25,12 @@ function App() {
   const [customerSupport, setCustomerSupport] = useState(false);
   const [callId, setCallId] = useState("");
   const [inCall, setInCall] = useState(false);
+  const [usedByCount, setUsedByCount] = useState(0);
   const pc = useRef<any>();
 
-  async function microphoneClick() {
+  async function microphoneClick(e: any) {
+    console.log(e);
+    e.stopPropagation();
     console.log("WHATWHAT");
     setInCall(true);
     try {
@@ -129,8 +132,8 @@ function App() {
     }
   }
 
-  async function answerClick() {
-    await microphoneClick();
+  async function answerClick(e: any) {
+    await microphoneClick(e);
     try {
       const callDoc = firestore.collection("calls").doc(callId);
       const answerCandidates = callDoc.collection("answerCandidates");
@@ -171,6 +174,24 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    async function getUsedByCount() {
+      // const {
+      //   data: { usedByCount },
+      // } = await axios.get("https://sellme.onrender.com/usedByCount");
+      const {
+        data: { usedByCount },
+      } = await axios.get("http://localhost:3001/usedByCount");
+      console.log("CALLING", usedByCount);
+
+      setUsedByCount(usedByCount);
+    }
+    getUsedByCount();
+    console.log(usedByCount);
+  }, []);
+
+  console.log(usedByCount);
+
   return (
     <main style={{ width: "100%", height: "100%" }}>
       {!customerSupport ? (
@@ -192,6 +213,7 @@ function App() {
             setCustomerSupport={setCustomerSupport}
             answerClick={answerClick}
             microphoneClick={microphoneClick}
+            usedByCount={usedByCount}
             inCall={inCall}
           />
         </>
@@ -208,207 +230,68 @@ function App() {
   );
 }
 
-function ChatComponent({
-  setCustomerSupport,
-  microphoneClick,
-  answerClick,
-  inCall,
-}: any) {
-  // const [callId, setCallId] = useState("");
-  // const pc = useRef<any>();
-
-  // async function microphoneClick() {
-  //   try {
-  //     const localStream = await navigator.mediaDevices.getUserMedia({
-  //       // video: true,
-  //       audio: true,
-  //     });
-  //     const remoteStream = new MediaStream();
-
-  //     // const { data } = await axios.get("https://sellme.onrender.com/ice");
-  //     // const {
-  //     //   data: { iceServers },
-  //     // } = await axios.get("https://sellme.onrender.com/ice");
-  //     const {
-  //       data: { iceServers },
-  //     } = await axios.get("http://localhost:3001/ice");
-  //     pc.current = new RTCPeerConnection({ iceServers });
-
-  //     // Push tracks from local stream to peer connection
-  //     localStream.getTracks().forEach((track) => {
-  //       pc.current.addTrack(track, localStream);
-  //     });
-
-  //     // Pull tracks from remote stream, add to video stream
-  //     pc.current.ontrack = (event: any) => {
-  //       event.streams[0].getTracks().forEach((track: any) => {
-  //         remoteStream.addTrack(track);
-  //       });
-  //     };
-  //     const localAudio = document.getElementById(
-  //       "webcamAudio"
-  //     ) as HTMLAudioElement;
-  //     localAudio.srcObject = localStream;
-  //     // localAudio.srcObject = localStream;
-  //     const remoteAudio = document.getElementById(
-  //       "remoteAudio"
-  //     ) as HTMLAudioElement;
-  //     remoteAudio.srcObject = remoteStream;
-
-  //     await callClick();
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
-
-  // async function callClick() {
-  //   // Reference Firestore collections for signaling
-  //   const callDoc = firestore.collection("calls").doc();
-  //   const offerCandidates = callDoc.collection("offerCandidates");
-  //   const answerCandidates = callDoc.collection("answerCandidates");
-  //   console.log(callDoc.id);
-  //   setCallId(callDoc.id);
-
-  //   // Get candidates for caller, save to db
-  //   pc.current.onicecandidate = (event: any) => {
-  //     event.candidate && offerCandidates.add(event.candidate.toJSON());
-  //   };
-
-  //   const offerDescription = await pc.current.createOffer();
-  //   await pc.current.setLocalDescription(offerDescription);
-
-  //   const offer = {
-  //     sdp: offerDescription.sdp,
-  //     type: offerDescription.type,
-  //   };
-
-  //   await callDoc.set({ offer });
-
-  //   // Listen for remote answer
-  //   callDoc.onSnapshot((snapshot) => {
-  //     const data = snapshot.data();
-  //     if (!pc.current.currentRemoteDescription && data?.answer) {
-  //       const answerDescription = new RTCSessionDescription(data.answer);
-  //       console.log(answerDescription, "SETTING REMOTE DESCRIPTION");
-  //       pc.current.setRemoteDescription(answerDescription);
-  //     }
-  //   });
-
-  //   // When answered, add candidate to peer connection
-  //   answerCandidates.onSnapshot((snapshot) => {
-  //     snapshot.docChanges().forEach((change) => {
-  //       if (change.type === "added") {
-  //         const candidate = new RTCIceCandidate(change.doc.data());
-  //         console.log("ADDING CANDIDATE TO CONNECTION");
-  //         pc.current.addIceCandidate(candidate);
-  //       }
-  //     });
-  //   });
-  // }
-
-  // async function answerClick() {
-  //   const callDoc = firestore.collection("calls").doc(callId);
-  //   const answerCandidates = callDoc.collection("answerCandidates");
-  //   const offerCandidates = callDoc.collection("offerCandidates");
-
-  //   pc.current.onicecandidate = (event: any) => {
-  //     event.candidate && answerCandidates.add(event.candidate.toJSON());
-  //   };
-
-  //   const callData = (await callDoc.get()).data();
-
-  //   const offerDescription = callData?.offer;
-  //   await pc.current.setRemoteDescription(
-  //     new RTCSessionDescription(offerDescription)
-  //   );
-
-  //   const answerDescription = await pc.current.createAnswer();
-  //   await pc.current.setLocalDescription(answerDescription);
-
-  //   const answer = {
-  //     type: answerDescription.type,
-  //     sdp: answerDescription.sdp,
-  //   };
-
-  //   await callDoc.update({ answer });
-
-  //   offerCandidates.onSnapshot((snapshot) => {
-  //     snapshot.docChanges().forEach((change) => {
-  //       console.log(change);
-  //       if (change.type === "added") {
-  //         let data = change.doc.data();
-  //         pc.current.addIceCandidate(new RTCIceCandidate(data));
-  //       }
-  //     });
-  //   });
-  // }
-
+function ChatComponent({ microphoneClick, inCall, usedByCount }: any) {
   return (
-    <div className="fixed bottom-6 right-6">
-      <div className="bg-green w-14 h-14 rounded-lg flex justify-center items-center slide-in relative shadow-3xl">
-        <img className="w-8" alt="" src="/images/mill-logo-white.png" />
-        {/* <div className="sound-square absolute border-2 border-brightGreen w-[58px] h-[58px] rounded-lg opacity-50" />
-        <div className="sound-square-2 absolute border-2 border-brightGreen w-[58px] h-[58px] rounded-lg opacity-50" /> */}
-        <Popup microphoneClick={microphoneClick} inCall={inCall} />
-      </div>
-      {/* <text className="text-red-400 font-size-20">Hello</text> */}
+    <div className="fixed bottom-0 right-4">
+      <Popup
+        microphoneClick={microphoneClick}
+        inCall={inCall}
+        usedByCount={usedByCount}
+      />
     </div>
-
-    // <div className="border-2 border-red-300 w-32 bg-green-100 fixed bottom-2 right-2">
-    //   <h2 className="text-pink-300 font-bold">1. Start your Microphone</h2>
-    //   <div className="videos" style={{ border: "1px solid" }}>
-    //     <span>
-    //       <h3 className="color-red">Local Stream</h3>
-    //       <audio id="webcamAudio" autoPlay playsInline muted />
-    //     </span>
-    //     <span>
-    //       <h3 className="color-green">Remote Stream</h3>
-    //       <audio id="remoteAudio" autoPlay playsInline />
-    //     </span>
-    //   </div>
-    //   <button id="webcamButton" onClick={microphoneClick}>
-    //     Start microphone
-    //   </button>
-    //   <h2>2. Create a new Call</h2>
-    //   <button onClick={callClick} id="callButton">
-    //     Create Call (offer)
-    //   </button>
-    //   <h2 className="font-bold underline">3. Join a Call</h2>
-    //   <p>Answer the call from a different browser window or device</p>
-    //   <input
-    //     id="callInput"
-    //     value={callId}
-    //     onChange={(e) => setCallId(e.target.value)}
-    //   />
-    //   <button onClick={answerClick} id="answerButton">
-    //     Answer
-    //   </button>
-    //   <h2>4. Hangup</h2>
-    //   <button id="hangupButton">Hangup</button>
-    // </div>
   );
 }
 
-function Popup({ microphoneClick, inCall }: any) {
+function Popup({ microphoneClick, usedByCount }: any) {
+  const [show, setShow] = useState(true);
   return (
-    <div className="w-[220px] absolute left-[-230px] bottom-0 bg-offWhite flex flex-col shadow-3xl rounded-lg p-4 z-10">
-      <text className="text-brownText font-semibold text-sm text-center mb-4">
-        Have questions? We're happy to help!
-      </text>
-      {inCall ? (
-        <p>In call</p>
+    <button
+      // slide-in
+      className={`w-[220px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
+        show ? " pt-6 px-4 items-center" : " pb-2.5 pt-2.5 pl-4"
+      }`}
+      onClick={() => setShow(!show)}
+    >
+      <img
+        src="/images/arrow.png"
+        className={`w-3 absolute top-3 right-3${show ? "" : " rotate-180"}`}
+      />
+      {show ? (
+        <>
+          <text className="text-offWhite font-bold text-l text-center mb-2">
+            Looking to buy?
+          </text>
+          <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+            Talk immediately <span>-</span> we're here to help.
+          </text>
+          <button
+            className="bg-brightGreen rounded-full py-2 px-6 mb-4"
+            id="webcamButton"
+            onClick={(e) => microphoneClick(e)}
+          >
+            <text className="text-darkGreen font-bold">Start audio call</text>
+          </button>
+          {usedByCount && (
+            <text className="text-brightGreen text-xs mb-2">
+              <span className="opacity-80">Used by </span>
+              <span className="font-bold text-xs">
+                {usedByCount.toLocaleString("en-US")}
+              </span>
+              <span className="opacity-80"> customers today</span>
+            </text>
+          )}
+        </>
       ) : (
-        <button
-          className="bg-green rounded-full p-1"
-          id="webcamButton"
-          onClick={microphoneClick}
-        >
-          <text className="text-white font-bold">Start audio call</text>
-        </button>
+        <text className="text-offWhite font-semibold text-xs">
+          <span className="text-brightGreen font-bold text-xs">
+            Have a question?
+          </span>{" "}
+          Call us live
+        </text>
       )}
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline />
-    </div>
+    </button>
   );
 }
 

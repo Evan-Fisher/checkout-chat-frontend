@@ -6,6 +6,7 @@ module.exports = {
       white: "#FFFFFF",
       green: "#258055",
       brightGreen: "#EBFF80",
+      darkGreen: "#20493E",
       offWhite: "#FEFCF5",
       brownText: "#4E260D",
     },
