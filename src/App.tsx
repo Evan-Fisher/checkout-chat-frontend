@@ -386,8 +386,8 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
   }
   return (
     <button
-      // slide-in
-      className={`w-[220px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
+      //
+      className={`slide-in w-[220px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
         show ? " pt-6 px-4 items-center" : " pb-2.5 pt-2.5 pl-4"
       }`}
       onClick={() => setShow(!show)}
