@@ -26,18 +26,14 @@ function App() {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [callId, setCallId] = useState("");
-  const [inCall, setInCall] = useState(false);
   const [usedByCount, setUsedByCount] = useState(0);
   const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
   const pc = useRef<any>();
 
   async function microphoneClick(e: any) {
-    console.log(e);
     e.stopPropagation();
-    console.log("WHATWHAT");
     setCallStatus("calling");
 
-    // setInCall(true);
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
         // video: true,
@@ -46,15 +42,13 @@ function App() {
       setLocalStream(localStream);
       const remoteStream = new MediaStream();
       setRemoteStream(remoteStream);
-      console.log("GOT HERE 1");
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      const {
-        data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
-      console.log("GOT HERE 1.5");
       // const {
       //   data: { iceServers },
-      // } = await axios.get("http://localhost:3001/ice");
+      // } = await axios.get("https://sellme.onrender.com/ice");
+      const {
+        data: { iceServers },
+      } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
@@ -81,12 +75,10 @@ function App() {
         "remoteAudio"
       ) as HTMLAudioElement;
       remoteAudio.srcObject = remoteStream;
-      console.log("GOT HERE 2");
       await callClick();
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
-      // setInCall(false);
     }
   }
 
@@ -118,7 +110,7 @@ function App() {
       // Listen for remote answer
       callDoc.onSnapshot((snapshot) => {
         const data = snapshot.data();
-        if (!pc.current.currentRemoteDescription && data?.answer) {
+        if (!pc.current?.currentRemoteDescription && data?.answer) {
           const answerDescription = new RTCSessionDescription(data.answer);
           console.log(answerDescription, "SETTING REMOTE DESCRIPTION");
           pc.current.setRemoteDescription(answerDescription);
@@ -139,7 +131,6 @@ function App() {
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
-      // setInCall(false);
     }
   }
   console.log({ callStatus });
@@ -207,6 +198,7 @@ function App() {
   }
 
   async function endCall(e: any) {
+    console.log("--------ENDING CALL--------");
     e.stopPropagation();
     setCallStatus("idle");
     // Stop media tracks
@@ -242,15 +234,11 @@ function App() {
       const {
         data: { usedByCount },
       } = await axios.get("http://localhost:3001/usedByCount");
-      console.log("CALLING", usedByCount);
 
       setUsedByCount(usedByCount);
     }
     getUsedByCount();
-    console.log(usedByCount);
   }, []);
-
-  console.log(usedByCount);
 
   return (
     <main style={{ width: "100%", height: "100%" }}>
@@ -274,7 +262,6 @@ function App() {
             answerClick={answerClick}
             microphoneClick={microphoneClick}
             usedByCount={usedByCount}
-            inCall={inCall}
             callStatus={callStatus}
             endCall={endCall}
           />
@@ -294,7 +281,6 @@ function App() {
 
 function ChatComponent({
   microphoneClick,
-  inCall,
   usedByCount,
   callStatus,
   endCall,
@@ -303,7 +289,6 @@ function ChatComponent({
     <div className="fixed bottom-0 right-4">
       <Popup
         microphoneClick={microphoneClick}
-        inCall={inCall}
         usedByCount={usedByCount}
         callStatus={callStatus}
         endCall={endCall}
@@ -373,6 +358,29 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
       <text className="text-offWhite font-semibold text-xs">
         <span className="text-brightGreen font-bold text-xs">Calling...</span>{" "}
         {/* Call us live */}
+      </text>
+    );
+  } else if (callStatus === "inCall") {
+    InnerModal = show ? (
+      <>
+        <text className="text-offWhite font-bold text-l text-center mb-2">
+          You're on a call with Evan
+        </text>
+        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+          Can't hear anything? Check that your audio is turned up.
+        </text>
+        <img src="/images/in-call.gif" className="w-14 mb-4" />
+        <button
+          className="bg-brightGreen rounded-full py-2 px-6 mb-4"
+          id="webcamButton"
+          onClick={(e) => endCall(e)}
+        >
+          <text className="text-darkGreen font-bold">End call</text>
+        </button>
+      </>
+    ) : (
+      <text className="text-offWhite font-semibold text-xs">
+        <span className="text-brightGreen font-bold text-xs">In call</span>{" "}
       </text>
     );
   }
