@@ -29,10 +29,16 @@ function App() {
   const [usedByCount, setUsedByCount] = useState(0);
   const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
   const pc = useRef<any>();
+  const callSoundRef = useRef<HTMLAudioElement>(null);
+  const callJoinedSoundRef = useRef<HTMLAudioElement>(null);
 
   async function microphoneClick(e: any) {
     e.stopPropagation();
     setCallStatus("calling");
+    // Play the audio when the call is answered
+    if (callSoundRef.current) {
+      callSoundRef.current.play();
+    }
 
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
@@ -79,6 +85,10 @@ function App() {
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
+      if (callSoundRef.current) {
+        callSoundRef.current.pause();
+        callSoundRef.current.currentTime = 0;
+      }
     }
   }
 
@@ -125,12 +135,25 @@ function App() {
             console.log("ADDING CANDIDATE TO CONNECTION");
             pc.current.addIceCandidate(candidate);
             setCallStatus("inCall");
+            // Play the audio when the call is answered
+            if (callSoundRef.current) {
+              callSoundRef.current.pause();
+              callSoundRef.current.currentTime = 0;
+            }
+            // Play the audio when the call is answered
+            if (callJoinedSoundRef.current) {
+              callJoinedSoundRef.current.play();
+            }
           }
         });
       });
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
+      if (callSoundRef.current) {
+        callSoundRef.current.pause();
+        callSoundRef.current.currentTime = 0;
+      }
     }
   }
   console.log({ callStatus });
@@ -200,6 +223,10 @@ function App() {
   async function endCall(e: any) {
     console.log("--------ENDING CALL--------");
     e.stopPropagation();
+    if (callSoundRef.current) {
+      callSoundRef.current.pause();
+      callSoundRef.current.currentTime = 0;
+    }
     setCallStatus("idle");
     // Stop media tracks
     stopMediaTracks(localStream);
@@ -264,6 +291,8 @@ function App() {
             usedByCount={usedByCount}
             callStatus={callStatus}
             endCall={endCall}
+            callSoundRef={callSoundRef}
+            callJoinedSoundRef={callJoinedSoundRef}
           />
         </>
       ) : (
@@ -284,6 +313,8 @@ function ChatComponent({
   usedByCount,
   callStatus,
   endCall,
+  callSoundRef,
+  callJoinedSoundRef,
 }: any) {
   return (
     <div className="fixed bottom-0 right-4">
@@ -292,22 +323,31 @@ function ChatComponent({
         usedByCount={usedByCount}
         callStatus={callStatus}
         endCall={endCall}
+        callSoundRef={callSoundRef}
+        callJoinedSoundRef={callJoinedSoundRef}
       />
     </div>
   );
 }
 
-function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
+function Popup({
+  microphoneClick,
+  usedByCount,
+  callStatus,
+  endCall,
+  callSoundRef,
+  callJoinedSoundRef,
+}: any) {
   const [show, setShow] = useState(true);
   let InnerModal;
 
   if (callStatus === "idle") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-l text-center mb-2">
+        <text className="text-offWhite font-bold text-xl text-center mb-2">
           Looking to buy?
         </text>
-        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+        <text className="text-offWhite font-semibold mb-4 text-center">
           Talk immediately <span>-</span> we're here to help.
         </text>
         <button
@@ -315,12 +355,14 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
           id="webcamButton"
           onClick={(e) => microphoneClick(e)}
         >
-          <text className="text-darkGreen font-bold">Start audio call</text>
+          <text className="text-darkGreen text-xl font-bold">
+            Start audio call
+          </text>
         </button>
         {usedByCount && (
-          <text className="text-brightGreen text-xs mb-2">
+          <text className="text-brightGreen text-sm mb-2">
             <span className="opacity-80">Used by </span>
-            <span className="font-bold text-xs">
+            <span className="font-bold">
               {usedByCount.toLocaleString("en-US")}
             </span>
             <span className="opacity-80"> customers today</span>
@@ -328,20 +370,18 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
         )}
       </>
     ) : (
-      <text className="text-offWhite font-semibold text-xs">
-        <span className="text-brightGreen font-bold text-xs">
-          Looking to buy?
-        </span>{" "}
-        Call us live
+      <text className="text-offWhite font-semibold">
+        <span className="text-brightGreen font-bold">Looking to buy?</span> Call
+        us live
       </text>
     );
   } else if (callStatus === "calling") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-l text-center mb-2">
+        <text className="text-offWhite font-bold text-xl text-center mb-2">
           Calling...
         </text>
-        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+        <text className="text-offWhite font-semibold mb-4 text-center">
           Just a moment please
         </text>
         <img src="/images/mill-logo.png" className="w-14 spin-slowly mb-4" />
@@ -351,22 +391,22 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
           onClick={(e) => endCall(e)}
           // onClick={(e) => microphoneClick(e)}
         >
-          <text className="text-darkGreen font-bold">Cancel call</text>
+          <text className="text-darkGreen font-bold text-xl">Cancel call</text>
         </button>
       </>
     ) : (
-      <text className="text-offWhite font-semibold text-xs">
-        <span className="text-brightGreen font-bold text-xs">Calling...</span>{" "}
+      <text className="text-offWhite font-semibold">
+        <span className="text-brightGreen font-bold">Calling...</span>{" "}
         {/* Call us live */}
       </text>
     );
   } else if (callStatus === "inCall") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-l text-center mb-2">
+        <text className="text-offWhite font-bold text-xl text-center mb-2">
           You're on a call with Evan
         </text>
-        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+        <text className="text-offWhite font-semibold mb-4 text-center">
           Can't hear anything? Check that your audio is turned up.
         </text>
         <img src="/images/in-call.gif" className="w-14 mb-4" />
@@ -375,19 +415,19 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
           id="webcamButton"
           onClick={(e) => endCall(e)}
         >
-          <text className="text-darkGreen font-bold">End call</text>
+          <text className="text-darkGreen font-bold text-xl">End call</text>
         </button>
       </>
     ) : (
-      <text className="text-offWhite font-semibold text-xs">
-        <span className="text-brightGreen font-bold text-xs">In call</span>{" "}
+      <text className="text-offWhite font-semibold">
+        <span className="text-brightGreen font-bold">In call</span>{" "}
       </text>
     );
   }
   return (
     <button
       //
-      className={`slide-in w-[220px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
+      className={`slide-in w-[260px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
         show ? " pt-6 px-4 items-center" : " pb-2.5 pt-2.5 pl-4"
       }`}
       onClick={() => setShow(!show)}
@@ -399,6 +439,12 @@ function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
       {InnerModal}
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline />
+      <audio ref={callSoundRef} src="/audio/ringing.mp3" preload="auto" loop />
+      <audio
+        ref={callJoinedSoundRef}
+        src="/audio/answered.mp3"
+        preload="auto"
+      />
     </button>
   );
 }
