@@ -23,22 +23,29 @@ const firestore = firebase.firestore();
 
 function App() {
   const [customerSupport, setCustomerSupport] = useState(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [callId, setCallId] = useState("");
   const [inCall, setInCall] = useState(false);
   const [usedByCount, setUsedByCount] = useState(0);
+  const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
   const pc = useRef<any>();
 
   async function microphoneClick(e: any) {
     console.log(e);
     e.stopPropagation();
     console.log("WHATWHAT");
-    setInCall(true);
+    setCallStatus("calling");
+
+    // setInCall(true);
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
         // video: true,
         audio: true,
       });
+      setLocalStream(localStream);
       const remoteStream = new MediaStream();
+      setRemoteStream(remoteStream);
       console.log("GOT HERE 1");
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
       const {
@@ -78,17 +85,19 @@ function App() {
       await callClick();
     } catch (error) {
       console.log(error);
-      setInCall(false);
+      setCallStatus("idle");
+      // setInCall(false);
     }
   }
 
   async function callClick() {
     try {
+      console.log("SETTING CALL STATUS");
       // Reference Firestore collections for signaling
       const callDoc = firestore.collection("calls").doc();
       const offerCandidates = callDoc.collection("offerCandidates");
       const answerCandidates = callDoc.collection("answerCandidates");
-      console.log(callDoc.id);
+      console.log({ callId: callDoc.id });
       setCallId(callDoc.id);
 
       // Get candidates for caller, save to db
@@ -123,14 +132,17 @@ function App() {
             const candidate = new RTCIceCandidate(change.doc.data());
             console.log("ADDING CANDIDATE TO CONNECTION");
             pc.current.addIceCandidate(candidate);
+            setCallStatus("inCall");
           }
         });
       });
     } catch (error) {
       console.log(error);
-      setInCall(false);
+      setCallStatus("idle");
+      // setInCall(false);
     }
   }
+  console.log({ callStatus });
 
   async function answerClick(e: any) {
     await microphoneClick(e);
@@ -174,6 +186,54 @@ function App() {
     }
   }
 
+  function closePeerConnection() {
+    if (pc.current) {
+      pc.current.close();
+      pc.current = null;
+    }
+  }
+
+  function stopMediaTracks(stream: any) {
+    if (stream) {
+      stream.getTracks().forEach((track: any) => track?.stop());
+    }
+  }
+
+  async function removeCallDocument(callId: any) {
+    if (callId) {
+      const callDoc = firestore.collection("calls").doc(callId);
+      await callDoc.delete();
+    }
+  }
+
+  async function endCall(e: any) {
+    e.stopPropagation();
+    setCallStatus("idle");
+    // Stop media tracks
+    stopMediaTracks(localStream);
+    stopMediaTracks(remoteStream);
+
+    const localAudio = document.getElementById(
+      "webcamAudio"
+    ) as HTMLAudioElement;
+    const remoteAudio = document.getElementById(
+      "remoteAudio"
+    ) as HTMLAudioElement;
+
+    if (localAudio) {
+      localAudio.srcObject = null; // Clear the media source
+    }
+
+    if (remoteAudio) {
+      remoteAudio.srcObject = null; // Clear the media source
+    }
+    // Close peer connection
+    closePeerConnection();
+
+    // Remove call document from Firestore (optional)
+    await removeCallDocument(callId);
+  }
+
   useEffect(() => {
     async function getUsedByCount() {
       // const {
@@ -215,6 +275,8 @@ function App() {
             microphoneClick={microphoneClick}
             usedByCount={usedByCount}
             inCall={inCall}
+            callStatus={callStatus}
+            endCall={endCall}
           />
         </>
       ) : (
@@ -230,20 +292,90 @@ function App() {
   );
 }
 
-function ChatComponent({ microphoneClick, inCall, usedByCount }: any) {
+function ChatComponent({
+  microphoneClick,
+  inCall,
+  usedByCount,
+  callStatus,
+  endCall,
+}: any) {
   return (
     <div className="fixed bottom-0 right-4">
       <Popup
         microphoneClick={microphoneClick}
         inCall={inCall}
         usedByCount={usedByCount}
+        callStatus={callStatus}
+        endCall={endCall}
       />
     </div>
   );
 }
 
-function Popup({ microphoneClick, usedByCount }: any) {
+function Popup({ microphoneClick, usedByCount, callStatus, endCall }: any) {
   const [show, setShow] = useState(true);
+  let InnerModal;
+
+  if (callStatus === "idle") {
+    InnerModal = show ? (
+      <>
+        <text className="text-offWhite font-bold text-l text-center mb-2">
+          Looking to buy?
+        </text>
+        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+          Talk immediately <span>-</span> we're here to help.
+        </text>
+        <button
+          className="bg-brightGreen rounded-full py-2 px-6 mb-4"
+          id="webcamButton"
+          onClick={(e) => microphoneClick(e)}
+        >
+          <text className="text-darkGreen font-bold">Start audio call</text>
+        </button>
+        {usedByCount && (
+          <text className="text-brightGreen text-xs mb-2">
+            <span className="opacity-80">Used by </span>
+            <span className="font-bold text-xs">
+              {usedByCount.toLocaleString("en-US")}
+            </span>
+            <span className="opacity-80"> customers today</span>
+          </text>
+        )}
+      </>
+    ) : (
+      <text className="text-offWhite font-semibold text-xs">
+        <span className="text-brightGreen font-bold text-xs">
+          Have a question?
+        </span>{" "}
+        Call us live
+      </text>
+    );
+  } else if (callStatus === "calling") {
+    InnerModal = show ? (
+      <>
+        <text className="text-offWhite font-bold text-l text-center mb-2">
+          Calling...
+        </text>
+        <text className="text-offWhite font-semibold text-xs mb-4 text-center">
+          Just a moment please
+        </text>
+        <img src="/images/mill-logo.png" className="w-14 spin-slowly mb-4" />
+        <button
+          className="bg-brightGreen rounded-full py-2 px-6 mb-4"
+          id="webcamButton"
+          onClick={(e) => endCall(e)}
+          // onClick={(e) => microphoneClick(e)}
+        >
+          <text className="text-darkGreen font-bold">Cancel call</text>
+        </button>
+      </>
+    ) : (
+      <text className="text-offWhite font-semibold text-xs">
+        <span className="text-brightGreen font-bold text-xs">Calling...</span>{" "}
+        {/* Call us live */}
+      </text>
+    );
+  }
   return (
     <button
       // slide-in
@@ -256,39 +388,7 @@ function Popup({ microphoneClick, usedByCount }: any) {
         src="/images/arrow.png"
         className={`w-3 absolute top-3 right-3${show ? "" : " rotate-180"}`}
       />
-      {show ? (
-        <>
-          <text className="text-offWhite font-bold text-l text-center mb-2">
-            Looking to buy?
-          </text>
-          <text className="text-offWhite font-semibold text-xs mb-4 text-center">
-            Talk immediately <span>-</span> we're here to help.
-          </text>
-          <button
-            className="bg-brightGreen rounded-full py-2 px-6 mb-4"
-            id="webcamButton"
-            onClick={(e) => microphoneClick(e)}
-          >
-            <text className="text-darkGreen font-bold">Start audio call</text>
-          </button>
-          {usedByCount && (
-            <text className="text-brightGreen text-xs mb-2">
-              <span className="opacity-80">Used by </span>
-              <span className="font-bold text-xs">
-                {usedByCount.toLocaleString("en-US")}
-              </span>
-              <span className="opacity-80"> customers today</span>
-            </text>
-          )}
-        </>
-      ) : (
-        <text className="text-offWhite font-semibold text-xs">
-          <span className="text-brightGreen font-bold text-xs">
-            Have a question?
-          </span>{" "}
-          Call us live
-        </text>
-      )}
+      {InnerModal}
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline />
     </button>

@@ -51,6 +51,21 @@ code {
   }
 }
 
+@keyframes spinPause {
+  0% {
+    transform: rotate(0deg);
+  }
+  90% {
+    transform: rotate(360deg);
+  }
+  95% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .sound-square {
   animation: lineAroundSquare 3s infinite ease-in-out;
 }
@@ -61,4 +76,9 @@ code {
 
 .slide-in {
   animation: slideInFromBottom 4s ease-out;
+}
+
+.spin-slowly {
+  animation: spinPause 2s ease-in-out infinite;
+  animation-delay: 0.25s; /* Optional: Delays the start of the animation */
 }
