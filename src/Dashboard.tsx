@@ -48,12 +48,12 @@ export default function Dashboard({}: //   callId,
       const remoteStream = new MediaStream();
       //   setRemoteStream(remoteStream);
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      // const {
-      //   data: { iceServers },
-      // } = await axios.get("https://sellme.onrender.com/ice");
       const {
         data: { iceServers },
-      } = await axios.get("http://localhost:3001/ice");
+      } = await axios.get("https://sellme.onrender.com/ice");
+      //   const {
+      //     data: { iceServers },
+      //   } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
