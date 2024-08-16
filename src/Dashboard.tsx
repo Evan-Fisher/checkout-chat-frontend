@@ -50,7 +50,11 @@ export default function Dashboard({}: //   callId,
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
       const {
         data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
+      } = await axios.get(
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3001/ice"
+          : "https://sellme.onrender.com/ice"
+      );
       //   const {
       //     data: { iceServers },
       //   } = await axios.get("http://localhost:3001/ice");

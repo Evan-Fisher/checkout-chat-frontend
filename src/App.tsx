@@ -50,7 +50,11 @@ function App() {
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
       const {
         data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
+      } = await axios.get(
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3001/ice"
+          : "https://sellme.onrender.com/ice"
+      );
       // const {
       //   data: { iceServers },
       // } = await axios.get("http://localhost:3001/ice");
@@ -265,9 +269,14 @@ function App() {
 
   useEffect(() => {
     async function getUsedByCount() {
+      console.log(process.env.NODE_ENV, "ENV");
       const {
         data: { usedByCount },
-      } = await axios.get("https://sellme.onrender.com/usedByCount");
+      } = await axios.get(
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3001/usedByCount"
+          : "https://sellme.onrender.com/usedByCount"
+      );
       // const {
       //   data: { usedByCount },
       // } = await axios.get("http://localhost:3001/usedByCount");
