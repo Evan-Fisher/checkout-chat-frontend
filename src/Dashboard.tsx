@@ -153,20 +153,20 @@ export default function Dashboard({}: //   callId,
         event.candidate && offerCandidates.add(event.candidate.toJSON());
       };
 
-      const offerDescription = await pc.current.createOffer();
-      await pc.current.setLocalDescription(offerDescription);
+      //   const offerDescription = await pc.current.createOffer();
+      //   await pc.current.setLocalDescription(offerDescription);
 
-      const offer = {
-        sdp: offerDescription.sdp,
-        type: offerDescription.type,
-      };
+      //   const offer = {
+      //     sdp: offerDescription.sdp,
+      //     type: offerDescription.type,
+      //   };
 
-      await callDoc.set({
-        offer,
-        data: {
-          answeringTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        },
-      });
+      //   await callDoc.set({
+      //     offer,
+      //     data: {
+      //       answeringTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      //     },
+      //   });
       // await callDoc.set(
       //   {
       //     data: { timestamp: firebase.firestore.FieldValue.serverTimestamp()} }
