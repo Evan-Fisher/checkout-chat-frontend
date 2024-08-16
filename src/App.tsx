@@ -1,10 +1,9 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import axios from "axios";
-import ReactDOM from "react-dom";
-import { animated, useSpring } from "@react-spring/web";
+import Dashboard from "./Dashboard";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDa_EdXNH16nn2NJx3Cf8V8RJNnFyPqfxM",
@@ -19,7 +18,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-const firestore = firebase.firestore();
+export const firestore = firebase.firestore();
 
 function App() {
   const [customerSupport, setCustomerSupport] = useState(false);
@@ -49,12 +48,12 @@ function App() {
       const remoteStream = new MediaStream();
       setRemoteStream(remoteStream);
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      const {
-        data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
       // const {
       //   data: { iceServers },
-      // } = await axios.get("http://localhost:3001/ice");
+      // } = await axios.get("https://sellme.onrender.com/ice");
+      const {
+        data: { iceServers },
+      } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
@@ -115,7 +114,18 @@ function App() {
         type: offerDescription.type,
       };
 
-      await callDoc.set({ offer });
+      await callDoc.set({
+        offer,
+        data: {
+          callingTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+      });
+      // await callDoc.set(
+      //   {
+      //     data: { timestamp: firebase.firestore.FieldValue.serverTimestamp()} }
+      //   },
+      //   { merge: true }
+      // );
 
       // Listen for remote answer
       callDoc.onSnapshot((snapshot) => {
@@ -156,49 +166,49 @@ function App() {
       }
     }
   }
-  console.log({ callStatus });
 
-  async function answerClick(e: any) {
-    await microphoneClick(e);
-    try {
-      const callDoc = firestore.collection("calls").doc(callId);
-      const answerCandidates = callDoc.collection("answerCandidates");
-      const offerCandidates = callDoc.collection("offerCandidates");
+  // async function answerClick(e: any) {
+  //   await microphoneClick(e);
+  //   try {
+  //     const callDoc = firestore.collection("calls").doc(callId);
+  //     const answerCandidates = callDoc.collection("answerCandidates");
+  //     const offerCandidates = callDoc.collection("offerCandidates");
 
-      pc.current.onicecandidate = (event: any) => {
-        event.candidate && answerCandidates.add(event.candidate.toJSON());
-      };
+  //     pc.current.onicecandidate = (event: any) => {
+  //       event.candidate && answerCandidates.add(event.candidate.toJSON());
+  //     };
 
-      const callData = (await callDoc.get()).data();
+  //     const callData = (await callDoc.get()).data();
 
-      const offerDescription = callData?.offer;
-      await pc.current.setRemoteDescription(
-        new RTCSessionDescription(offerDescription)
-      );
+  //     const offerDescription = callData?.offer;
+  //     console.log({ offerDescription });
+  //     await pc.current.setRemoteDescription(
+  //       new RTCSessionDescription(offerDescription)
+  //     );
 
-      const answerDescription = await pc.current.createAnswer();
-      await pc.current.setLocalDescription(answerDescription);
+  //     const answerDescription = await pc.current.createAnswer();
+  //     await pc.current.setLocalDescription(answerDescription);
 
-      const answer = {
-        type: answerDescription.type,
-        sdp: answerDescription.sdp,
-      };
+  //     const answer = {
+  //       type: answerDescription.type,
+  //       sdp: answerDescription.sdp,
+  //     };
 
-      await callDoc.update({ answer });
+  //     await callDoc.update({ answer });
 
-      offerCandidates.onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          console.log(change);
-          if (change.type === "added") {
-            let data = change.doc.data();
-            pc.current.addIceCandidate(new RTCIceCandidate(data));
-          }
-        });
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  //     offerCandidates.onSnapshot((snapshot) => {
+  //       snapshot.docChanges().forEach((change) => {
+  //         console.log(change);
+  //         if (change.type === "added") {
+  //           let data = change.doc.data();
+  //           pc.current.addIceCandidate(new RTCIceCandidate(data));
+  //         }
+  //       });
+  //     });
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 
   function closePeerConnection() {
     if (pc.current) {
@@ -255,16 +265,24 @@ function App() {
 
   useEffect(() => {
     async function getUsedByCount() {
-      const {
-        data: { usedByCount },
-      } = await axios.get("https://sellme.onrender.com/usedByCount");
       // const {
       //   data: { usedByCount },
-      // } = await axios.get("http://localhost:3001/usedByCount");
+      // } = await axios.get("https://sellme.onrender.com/usedByCount");
+      const {
+        data: { usedByCount },
+      } = await axios.get("http://localhost:3001/usedByCount");
 
       setUsedByCount(usedByCount);
     }
     getUsedByCount();
+
+    // return () => {
+    //   // delete the call doc from the db
+    //   removeCallDocument(callId);
+    //   closePeerConnection();
+    //   stopMediaTracks(localStream);
+    //   stopMediaTracks(remoteStream);
+    // };
   }, []);
 
   return (
@@ -286,7 +304,7 @@ function App() {
           </button>
           <ChatComponent
             setCustomerSupport={setCustomerSupport}
-            answerClick={answerClick}
+            // answerClick={answerClick}
             microphoneClick={microphoneClick}
             usedByCount={usedByCount}
             callStatus={callStatus}
@@ -296,13 +314,7 @@ function App() {
           />
         </>
       ) : (
-        <div>
-          <p>Hello! CUstomer support</p>
-          <input value={callId} onChange={(e) => setCallId(e.target.value)} />
-          <button onClick={answerClick}>PICK UP PHONE</button>
-          <audio id="webcamAudio" autoPlay playsInline muted />
-          <audio id="remoteAudio" autoPlay playsInline />
-        </div>
+        <Dashboard />
       )}
     </main>
   );
@@ -426,7 +438,6 @@ function Popup({
   }
   return (
     <button
-      //
       className={`slide-in w-[260px] bottom-0 bg-darkGreen flex flex-col shadow-3xl rounded-t-2xl z-10 relative${
         show ? " pt-6 px-4 items-center" : " pb-2.5 pt-2.5 pl-4"
       }`}
