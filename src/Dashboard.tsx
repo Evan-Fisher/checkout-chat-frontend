@@ -16,7 +16,7 @@ export default function Dashboard({}: //   callId,
   const [activeCalls, setActiveCalls] = useState([]);
   const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
   const pc = useRef<any>();
-  const callSoundRef = useRef<HTMLAudioElement>(null);
+  //   const callSoundRef = useRef<HTMLAudioElement>(null);
   const callJoinedSoundRef = useRef<HTMLAudioElement>(null);
 
   //   async function answerClick() {
@@ -35,9 +35,9 @@ export default function Dashboard({}: //   callId,
     e.stopPropagation();
     // setCallStatus("calling");
     // Play the audio when the call is answered
-    if (callSoundRef.current) {
-      callSoundRef.current.play();
-    }
+    // if (callSoundRef.current) {
+    //   callSoundRef.current.play();
+    // }
 
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
@@ -84,10 +84,10 @@ export default function Dashboard({}: //   callId,
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
-      if (callSoundRef.current) {
-        callSoundRef.current.pause();
-        callSoundRef.current.currentTime = 0;
-      }
+      //   if (callSoundRef.current) {
+      //     callSoundRef.current.pause();
+      //     callSoundRef.current.currentTime = 0;
+      //   }
     }
   }
 
@@ -160,7 +160,7 @@ export default function Dashboard({}: //   callId,
       await callDoc.set({
         offer,
         data: {
-          callingTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          answeringTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
         },
       });
       // await callDoc.set(
@@ -189,10 +189,10 @@ export default function Dashboard({}: //   callId,
             pc.current.addIceCandidate(candidate);
             setCallStatus("inCall");
             // Play the audio when the call is answered
-            if (callSoundRef.current) {
-              callSoundRef.current.pause();
-              callSoundRef.current.currentTime = 0;
-            }
+            // if (callSoundRef.current) {
+            //   callSoundRef.current.pause();
+            //   callSoundRef.current.currentTime = 0;
+            // }
             // Play the audio when the call is answered
             if (callJoinedSoundRef.current) {
               callJoinedSoundRef.current.play();
@@ -203,10 +203,10 @@ export default function Dashboard({}: //   callId,
     } catch (error) {
       console.log(error);
       setCallStatus("idle");
-      if (callSoundRef.current) {
-        callSoundRef.current.pause();
-        callSoundRef.current.currentTime = 0;
-      }
+      //   if (callSoundRef.current) {
+      //     callSoundRef.current.pause();
+      //     callSoundRef.current.currentTime = 0;
+      //   }
     }
   }
 
@@ -301,6 +301,12 @@ export default function Dashboard({}: //   callId,
       {/* <button onClick={answerClick}>PICK UP PHONE</button> */}
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline />
+      {/* <audio ref={callSoundRef} src="/audio/ringing.mp3" preload="auto" loop /> */}
+      <audio
+        ref={callJoinedSoundRef}
+        src="/audio/answered.mp3"
+        preload="auto"
+      />
     </div>
   );
 }
