@@ -297,6 +297,10 @@ export default function Dashboard({}: //   callId,
           })}
         </div>
       </div>
+      {/* <input value={callId} onChange={(e) => setCallId(e.target.value)} /> */}
+      {/* <button onClick={answerClick}>PICK UP PHONE</button> */}
+      <audio id="webcamAudio" autoPlay playsInline muted />
+      <audio id="remoteAudio" autoPlay playsInline />
     </div>
   );
 }
