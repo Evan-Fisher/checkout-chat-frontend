@@ -294,7 +294,8 @@ export default function Dashboard({}: //   callId,
             return (
               <div className="flex bg-white px-10 py-2 rounded-md shadow-md justify-between items-center">
                 <h4 className="text-brownText font-semibold text-l">
-                  Time in call: {call.data?.callingTimestamp || "N/A"}
+                  Time in call:{" "}
+                  {/* {timeSince(call.data?.callingTimestamp?.seconds)} */}
                 </h4>
               </div>
             );
