@@ -48,12 +48,12 @@ function App() {
       const remoteStream = new MediaStream();
       setRemoteStream(remoteStream);
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      // const {
-      //   data: { iceServers },
-      // } = await axios.get("https://sellme.onrender.com/ice");
       const {
         data: { iceServers },
-      } = await axios.get("http://localhost:3001/ice");
+      } = await axios.get("https://sellme.onrender.com/ice");
+      // const {
+      //   data: { iceServers },
+      // } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
@@ -265,12 +265,12 @@ function App() {
 
   useEffect(() => {
     async function getUsedByCount() {
-      // const {
-      //   data: { usedByCount },
-      // } = await axios.get("https://sellme.onrender.com/usedByCount");
       const {
         data: { usedByCount },
-      } = await axios.get("http://localhost:3001/usedByCount");
+      } = await axios.get("https://sellme.onrender.com/usedByCount");
+      // const {
+      //   data: { usedByCount },
+      // } = await axios.get("http://localhost:3001/usedByCount");
 
       setUsedByCount(usedByCount);
     }
@@ -356,46 +356,44 @@ function Popup({
   if (callStatus === "idle") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-xl text-center mb-2">
+        <p className="text-offWhite font-bold text-xl text-center mb-2">
           Looking to buy?
-        </text>
-        <text className="text-offWhite font-semibold mb-4 text-center">
+        </p>
+        <p className="text-offWhite font-semibold mb-4 text-center">
           Talk immediately <span>-</span> we're here to help.
-        </text>
+        </p>
         <button
           className="bg-brightGreen rounded-full py-2 px-6 mb-4"
           id="webcamButton"
           onClick={(e) => microphoneClick(e)}
         >
-          <text className="text-darkGreen text-xl font-bold">
-            Start audio call
-          </text>
+          <p className="text-darkGreen text-xl font-bold">Start audio call</p>
         </button>
         {usedByCount && (
-          <text className="text-brightGreen text-sm mb-2">
+          <p className="text-brightGreen text-sm mb-2">
             <span className="opacity-80">Used by </span>
             <span className="font-bold">
               {usedByCount.toLocaleString("en-US")}
             </span>
             <span className="opacity-80"> customers today</span>
-          </text>
+          </p>
         )}
       </>
     ) : (
-      <text className="text-offWhite font-semibold">
+      <p className="text-offWhite font-semibold">
         <span className="text-brightGreen font-bold">Looking to buy?</span> Call
         us live
-      </text>
+      </p>
     );
   } else if (callStatus === "calling") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-xl text-center mb-2">
+        <p className="text-offWhite font-bold text-xl text-center mb-2">
           Calling...
-        </text>
-        <text className="text-offWhite font-semibold mb-4 text-center">
+        </p>
+        <p className="text-offWhite font-semibold mb-4 text-center">
           Just a moment please
-        </text>
+        </p>
         <img src="/images/mill-logo.png" className="w-14 spin-slowly mb-4" />
         <button
           className="bg-brightGreen rounded-full py-2 px-6 mb-4"
@@ -403,37 +401,37 @@ function Popup({
           onClick={(e) => endCall(e)}
           // onClick={(e) => microphoneClick(e)}
         >
-          <text className="text-darkGreen font-bold text-xl">Cancel call</text>
+          <p className="text-darkGreen font-bold text-xl">Cancel call</p>
         </button>
       </>
     ) : (
-      <text className="text-offWhite font-semibold">
+      <p className="text-offWhite font-semibold">
         <span className="text-brightGreen font-bold">Calling...</span>{" "}
         {/* Call us live */}
-      </text>
+      </p>
     );
   } else if (callStatus === "inCall") {
     InnerModal = show ? (
       <>
-        <text className="text-offWhite font-bold text-xl text-center mb-2">
+        <p className="text-offWhite font-bold text-xl text-center mb-2">
           You're on a call with Evan
-        </text>
-        <text className="text-offWhite font-semibold mb-4 text-center">
+        </p>
+        <p className="text-offWhite font-semibold mb-4 text-center">
           Can't hear anything? Check that your audio is turned up.
-        </text>
+        </p>
         <img src="/images/in-call.gif" className="w-14 mb-4" />
         <button
           className="bg-brightGreen rounded-full py-2 px-6 mb-4"
           id="webcamButton"
           onClick={(e) => endCall(e)}
         >
-          <text className="text-darkGreen font-bold text-xl">End call</text>
+          <p className="text-darkGreen font-bold text-xl">End call</p>
         </button>
       </>
     ) : (
-      <text className="text-offWhite font-semibold">
+      <p className="text-offWhite font-semibold">
         <span className="text-brightGreen font-bold">In call</span>{" "}
-      </text>
+      </p>
     );
   }
   return (
