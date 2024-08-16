@@ -48,12 +48,12 @@ export default function Dashboard({}: //   callId,
       const remoteStream = new MediaStream();
       //   setRemoteStream(remoteStream);
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      const {
-        data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
       //   const {
       //     data: { iceServers },
-      //   } = await axios.get("http://localhost:3001/ice");
+      //   } = await axios.get("https://sellme.onrender.com/ice");
+      const {
+        data: { iceServers },
+      } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
@@ -262,7 +262,8 @@ export default function Dashboard({}: //   callId,
             return (
               <div className="flex bg-white px-10 py-2 rounded-md shadow-md justify-between items-center">
                 <h4 className="text-brownText font-semibold text-l">
-                  Time waiting: {call.data?.callingTimestamp || "N/A"}
+                  Time waiting:{" "}
+                  {timeSince(call.data?.callingTimestamp?.seconds)}
                 </h4>
                 <button
                   onClick={(e) => answerClick(e, call.id)}
@@ -306,4 +307,24 @@ export default function Dashboard({}: //   callId,
       <button onClick={answerClick}>PICK UP PHONE</button>
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline /> */
+}
+
+function timeSince(timestampInSeconds: any) {
+  if (!timestampInSeconds) {
+    return "N/A";
+  }
+  // Get the current time in seconds
+  const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
+
+  // Calculate the difference in seconds
+  const elapsedSeconds = currentTimestampInSeconds - timestampInSeconds;
+
+  // Calculate the number of full minutes
+  const minutes = Math.floor(elapsedSeconds / 60);
+
+  // Calculate the remaining seconds
+  const seconds = elapsedSeconds % 60;
+
+  // Format the time as "minutes:seconds"
+  return `${minutes}:${seconds}`;
 }

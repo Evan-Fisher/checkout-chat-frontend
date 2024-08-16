@@ -48,12 +48,12 @@ function App() {
       const remoteStream = new MediaStream();
       setRemoteStream(remoteStream);
       // const { data } = await axios.get("https://sellme.onrender.com/ice");
-      const {
-        data: { iceServers },
-      } = await axios.get("https://sellme.onrender.com/ice");
       // const {
       //   data: { iceServers },
-      // } = await axios.get("http://localhost:3001/ice");
+      // } = await axios.get("https://sellme.onrender.com/ice");
+      const {
+        data: { iceServers },
+      } = await axios.get("http://localhost:3001/ice");
       // //
       // const {
       //   data: { iceServers },
@@ -265,12 +265,12 @@ function App() {
 
   useEffect(() => {
     async function getUsedByCount() {
-      const {
-        data: { usedByCount },
-      } = await axios.get("https://sellme.onrender.com/usedByCount");
       // const {
       //   data: { usedByCount },
-      // } = await axios.get("http://localhost:3001/usedByCount");
+      // } = await axios.get("https://sellme.onrender.com/usedByCount");
+      const {
+        data: { usedByCount },
+      } = await axios.get("http://localhost:3001/usedByCount");
 
       setUsedByCount(usedByCount);
     }
