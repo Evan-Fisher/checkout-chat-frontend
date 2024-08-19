@@ -3,51 +3,28 @@ import { firestore } from "./App";
 import axios from "axios";
 import firebase from "firebase/compat/app";
 
-export default function Dashboard({}: //   callId,
-//   setCallId,
-//   answerClick,
-{
-  //   callId: string;
-  //   setCallId: (val: string) => void;
-  //   answerClick: (e: any) => void;
-}) {
-  const [callId, setCallId] = useState("");
+export default function Dashboard() {
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [callingCalls, setCallingCalls] = useState([]);
   const [activeCalls, setActiveCalls] = useState([]);
   const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
+  const [callId, setCallId] = useState("");
+  const callIdRef = useRef<string | null>(null);
   const pc = useRef<any>();
-  //   const callSoundRef = useRef<HTMLAudioElement>(null);
   const callJoinedSoundRef = useRef<HTMLAudioElement>(null);
-
-  //   async function answerClick() {
-  //     const callDoc = firestore.collection("calls").doc(callId);
-  //     const callData = (await callDoc.get()).data();
-  //     if (callData.offer) {
-  //       const answer = {
-  //         type: "answer",
-  //         sdp: "answer",
-  //       };
-  //       await callDoc.update({ answer });
-  //     }
-  //   }
+  const callEndedSoundRef = useRef<HTMLAudioElement>(null);
 
   async function microphoneClick(e: any) {
     e.stopPropagation();
-    // setCallStatus("calling");
-    // Play the audio when the call is answered
-    // if (callSoundRef.current) {
-    //   callSoundRef.current.play();
-    // }
 
     try {
       const localStream = await navigator.mediaDevices.getUserMedia({
-        // video: true,
         audio: true,
       });
-      //   setLocalStream(localStream);
+      setLocalStream(localStream);
       const remoteStream = new MediaStream();
-      //   setRemoteStream(remoteStream);
-      // const { data } = await axios.get("https://sellme.onrender.com/ice");
+      setRemoteStream(remoteStream);
       const {
         data: { iceServers },
       } = await axios.get(
@@ -55,15 +32,21 @@ export default function Dashboard({}: //   callId,
           ? "http://localhost:3001/ice"
           : "https://sellme.onrender.com/ice"
       );
-      //   const {
-      //     data: { iceServers },
-      //   } = await axios.get("http://localhost:3001/ice");
-      // //
-      // const {
-      //   data: { iceServers },
-      // } = await axios.get("https://1d8f-70-113-41-166.ngrok-free.app/");
+
       pc.current = new RTCPeerConnection({ iceServers });
 
+      pc.current.addEventListener("connectionstatechange", (event: any) => {
+        console.log(event);
+        const eventStatus = event.target.connectionState;
+        console.log({ eventStatus });
+        if (eventStatus === "disconnected") {
+          // 1. Play the audio when the call is ended
+          if (callEndedSoundRef.current) {
+            callEndedSoundRef.current.play();
+          }
+          endCall();
+        }
+      });
       // Push tracks from local stream to peer connection
       localStream.getTracks().forEach((track) => {
         pc.current.addTrack(track, localStream);
@@ -109,7 +92,6 @@ export default function Dashboard({}: //   callId,
       const callData = (await callDoc.get()).data();
 
       const offerDescription = callData?.offer;
-      console.log({ offerDescription });
       await pc.current.setRemoteDescription(
         new RTCSessionDescription(offerDescription)
       );
@@ -122,17 +104,31 @@ export default function Dashboard({}: //   callId,
         sdp: answerDescription.sdp,
       };
 
-      await callDoc.update({ answer });
+      console.log("ADDING TO DB");
+      await callDoc.set(
+        {
+          answer,
+          data: {
+            answeringTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          },
+        },
+        { merge: true }
+      );
 
-      offerCandidates.onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          console.log(change);
-          if (change.type === "added") {
-            let data = change.doc.data();
-            pc.current.addIceCandidate(new RTCIceCandidate(data));
-          }
-        });
-      });
+      const unsubFromOfferCandidates = offerCandidates.onSnapshot(
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            console.log(change);
+            if (change.type === "added") {
+              let data = change.doc.data();
+              pc.current.addIceCandidate(new RTCIceCandidate(data));
+            }
+          });
+        }
+      );
+      setCallStatus("inCall");
+      console.log("SETTING CALL ID", callId);
+      setCallId(callId);
     } catch (error) {
       console.log(error);
     }
@@ -140,39 +136,16 @@ export default function Dashboard({}: //   callId,
 
   async function callClick() {
     try {
-      console.log("SETTING CALL STATUS");
       // Reference Firestore collections for signaling
       const callDoc = firestore.collection("calls").doc();
       const offerCandidates = callDoc.collection("offerCandidates");
       const answerCandidates = callDoc.collection("answerCandidates");
-      //   console.log({ callId: callDoc.id });
-      setCallId(callDoc.id);
+      //   setCallId(callDoc.id);
 
       // Get candidates for caller, save to db
       pc.current.onicecandidate = (event: any) => {
         event.candidate && offerCandidates.add(event.candidate.toJSON());
       };
-
-      //   const offerDescription = await pc.current.createOffer();
-      //   await pc.current.setLocalDescription(offerDescription);
-
-      //   const offer = {
-      //     sdp: offerDescription.sdp,
-      //     type: offerDescription.type,
-      //   };
-
-      //   await callDoc.set({
-      //     offer,
-      //     data: {
-      //       answeringTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      //     },
-      //   });
-      // await callDoc.set(
-      //   {
-      //     data: { timestamp: firebase.firestore.FieldValue.serverTimestamp()} }
-      //   },
-      //   { merge: true }
-      // );
 
       // Listen for remote answer
       callDoc.onSnapshot((snapshot) => {
@@ -191,9 +164,9 @@ export default function Dashboard({}: //   callId,
             const candidate = new RTCIceCandidate(change.doc.data());
             console.log("ADDING CANDIDATE TO CONNECTION");
             pc.current.addIceCandidate(candidate);
-            setCallStatus("inCall");
+            // setCallStatus("inCall");
             // Play the audio when the call is answered
-            // if (callSoundRef.current) {
+            // if (callSoundRef.current) {.set
             //   callSoundRef.current.pause();
             //   callSoundRef.current.currentTime = 0;
             // }
@@ -214,6 +187,36 @@ export default function Dashboard({}: //   callId,
     }
   }
 
+  async function endCall() {
+    console.log("--------ENDING CALL--------");
+    // e.stopPropagation();
+
+    setCallStatus("idle");
+    // Stop media tracks
+    stopMediaTracks(localStream);
+    stopMediaTracks(remoteStream);
+
+    const localAudio = document.getElementById(
+      "webcamAudio"
+    ) as HTMLAudioElement;
+    const remoteAudio = document.getElementById(
+      "remoteAudio"
+    ) as HTMLAudioElement;
+
+    if (localAudio) {
+      localAudio.srcObject = null; // Clear the media source
+    }
+
+    if (remoteAudio) {
+      remoteAudio.srcObject = null; // Clear the media source
+    }
+    // Close peer connection
+    closePeerConnection(pc);
+
+    // Remove call document from Firestore (optional)
+    await removeCallDocument(callIdRef.current);
+  }
+
   useEffect(() => {
     let activeCalls: any = [];
     let callingCalls: any = [];
@@ -223,19 +226,20 @@ export default function Dashboard({}: //   callId,
         const doc = change.doc;
         const docData = doc.data();
         if (change.type === "added" || change.type === "modified") {
-          if (docData.offer && docData.answer) {
-            // Update or add to activeCalls
-            activeCalls = [
-              ...activeCalls.filter((call: any) => call.id !== doc.id),
-              { ...docData, id: doc.id },
-            ];
-          } else if (docData.offer) {
+          if (docData.offer && !docData.answer) {
             // Update or add to callingCalls
             callingCalls = [
               ...callingCalls.filter((call: any) => call.id !== doc.id),
               { ...docData, id: doc.id },
             ];
           }
+          //   if (docData.offer && docData.answer) {
+          //     // Update or add to activeCalls
+          //     activeCalls = [
+          //       ...activeCalls.filter((call: any) => call.id !== doc.id),
+          //       { ...docData, id: doc.id },
+          //     ];
+          //   } else
 
           setCallingCalls(callingCalls);
           setActiveCalls(activeCalls);
@@ -251,18 +255,20 @@ export default function Dashboard({}: //   callId,
     });
   }, []);
 
+  useEffect(() => {
+    // Need ref for closure in listener
+    callIdRef.current = callId;
+  }, [callId]);
+
   return (
     <div className="py-12 px-10 bg-offWhite h-full">
       <h1 className="text-brownText font-bold text-3xl mb-6">
         Active Mill Checkout Calls
       </h1>
-      <h2 className="text-brownText font-semibold text-xl mb-2">
-        Ringing Calls
-      </h2>
+      <h2 className="text-brownText font-semibold text-xl mb-2">Calls</h2>
       <div className="flex mb-3">
         <div className="flex flex-col gap-4 w-[60%] mr-4">
           {callingCalls.map((call: any) => {
-            console.log(call);
             return (
               <div className="flex bg-white px-10 py-2 rounded-md shadow-md justify-between items-center">
                 <h4 className="text-brownText font-semibold text-l">
@@ -279,12 +285,8 @@ export default function Dashboard({}: //   callId,
             );
           })}
         </div>
-        <div>
-          <h4>ANSWERED CALL</h4>
-          <p>{callStatus}</p>
-        </div>
       </div>
-      <h2 className="text-brownText font-semibold text-xl mb-2">
+      {/* <h2 className="text-brownText font-semibold text-xl mb-2">
         Conversating Calls
       </h2>
       <div className="flex mb-3">
@@ -295,33 +297,24 @@ export default function Dashboard({}: //   callId,
               <div className="flex bg-white px-10 py-2 rounded-md shadow-md justify-between items-center">
                 <h4 className="text-brownText font-semibold text-l">
                   Time in call:{" "}
-                  {/* {timeSince(call.data?.callingTimestamp?.seconds)} */}
+                   {timeSince(call.data?.callingTimestamp?.seconds)} 
+
                 </h4>
               </div>
             );
           })}
         </div>
-      </div>
-      {/* <input value={callId} onChange={(e) => setCallId(e.target.value)} /> */}
-      {/* <button onClick={answerClick}>PICK UP PHONE</button> */}
+      </div> */}
       <audio id="webcamAudio" autoPlay playsInline muted />
       <audio id="remoteAudio" autoPlay playsInline />
-      {/* <audio ref={callSoundRef} src="/audio/ringing.mp3" preload="auto" loop /> */}
       <audio
         ref={callJoinedSoundRef}
         src="/audio/answered.mp3"
         preload="auto"
       />
+      <audio ref={callEndedSoundRef} src="/audio/ended.mp3" preload="auto" />
     </div>
   );
-}
-
-{
-  /* <p>Hello! CUstomer support</p>
-      <input value={callId} onChange={(e) => setCallId(e.target.value)} />
-      <button onClick={answerClick}>PICK UP PHONE</button>
-      <audio id="webcamAudio" autoPlay playsInline muted />
-      <audio id="remoteAudio" autoPlay playsInline /> */
 }
 
 function timeSince(timestampInSeconds: any) {
@@ -342,4 +335,25 @@ function timeSince(timestampInSeconds: any) {
 
   // Format the time as "minutes:seconds"
   return `${minutes}:${seconds}`;
+}
+
+function stopMediaTracks(stream: any) {
+  if (stream) {
+    stream.getTracks().forEach((track: any) => track?.stop());
+  }
+}
+
+function closePeerConnection(pc: any) {
+  if (pc.current) {
+    pc.current.close();
+    pc.current = null;
+  }
+}
+
+async function removeCallDocument(callId: any) {
+  console.log("REMOVING CALL DOCUMENT", { callId });
+  if (callId) {
+    const callDoc = firestore.collection("calls").doc(callId);
+    await callDoc.delete();
+  }
 }

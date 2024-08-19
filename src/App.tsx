@@ -29,7 +29,9 @@ function App() {
   const [callStatus, setCallStatus] = useState("idle"); // "idle", "calling", "inCall", "ended"
   const pc = useRef<any>();
   const callSoundRef = useRef<HTMLAudioElement>(null);
+  const callIdRef = useRef<string | null>(null);
   const callJoinedSoundRef = useRef<HTMLAudioElement>(null);
+  const callEndedSoundRef = useRef<HTMLAudioElement>(null);
 
   async function microphoneClick(e: any) {
     e.stopPropagation();
@@ -63,6 +65,19 @@ function App() {
       //   data: { iceServers },
       // } = await axios.get("https://1d8f-70-113-41-166.ngrok-free.app/");
       pc.current = new RTCPeerConnection({ iceServers });
+
+      pc.current.addEventListener("connectionstatechange", (event: any) => {
+        console.log(event);
+        const eventStatus = event.target.connectionState;
+        console.log({ eventStatus });
+        if (eventStatus === "disconnected") {
+          // 1. Play the audio when the call is ended
+          if (callEndedSoundRef.current) {
+            callEndedSoundRef.current.play();
+          }
+          endCall(null);
+        }
+      });
 
       // Push tracks from local stream to peer connection
       localStream.getTracks().forEach((track) => {
@@ -228,6 +243,7 @@ function App() {
   }
 
   async function removeCallDocument(callId: any) {
+    console.log("REMOVING CALL DOCUMENT", { callId });
     if (callId) {
       const callDoc = firestore.collection("calls").doc(callId);
       await callDoc.delete();
@@ -236,7 +252,7 @@ function App() {
 
   async function endCall(e: any) {
     console.log("--------ENDING CALL--------");
-    e.stopPropagation();
+    e?.stopPropagation();
     if (callSoundRef.current) {
       callSoundRef.current.pause();
       callSoundRef.current.currentTime = 0;
@@ -264,7 +280,7 @@ function App() {
     closePeerConnection();
 
     // Remove call document from Firestore (optional)
-    await removeCallDocument(callId);
+    await removeCallDocument(callIdRef.current);
   }
 
   useEffect(() => {
@@ -294,6 +310,11 @@ function App() {
     // };
   }, []);
 
+  useEffect(() => {
+    // Need ref for closure in listener
+    callIdRef.current = callId;
+  }, [callId]);
+
   return (
     <main style={{ width: "100%", height: "100%" }}>
       {!customerSupport ? (
@@ -320,6 +341,7 @@ function App() {
             endCall={endCall}
             callSoundRef={callSoundRef}
             callJoinedSoundRef={callJoinedSoundRef}
+            callEndedSoundRef={callEndedSoundRef}
           />
         </>
       ) : (
@@ -336,6 +358,7 @@ function ChatComponent({
   endCall,
   callSoundRef,
   callJoinedSoundRef,
+  callEndedSoundRef,
 }: any) {
   return (
     <div className="fixed bottom-0 right-4">
@@ -346,6 +369,7 @@ function ChatComponent({
         endCall={endCall}
         callSoundRef={callSoundRef}
         callJoinedSoundRef={callJoinedSoundRef}
+        callEndedSoundRef={callEndedSoundRef}
       />
     </div>
   );
@@ -358,6 +382,7 @@ function Popup({
   endCall,
   callSoundRef,
   callJoinedSoundRef,
+  callEndedSoundRef,
 }: any) {
   const [show, setShow] = useState(true);
   let InnerModal;
@@ -423,7 +448,7 @@ function Popup({
     InnerModal = show ? (
       <>
         <p className="text-offWhite font-bold text-xl text-center mb-2">
-          You're on a call with Evan
+          You're on a call with Ari
         </p>
         <p className="text-offWhite font-semibold mb-4 text-center">
           Can't hear anything? Check that your audio is turned up.
@@ -463,6 +488,7 @@ function Popup({
         src="/audio/answered.mp3"
         preload="auto"
       />
+      <audio ref={callEndedSoundRef} src="/audio/ended.mp3" preload="auto" />
     </button>
   );
 }
