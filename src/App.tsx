@@ -276,6 +276,9 @@ function App() {
     if (remoteAudio) {
       remoteAudio.srcObject = null; // Clear the media source
     }
+    if (callEndedSoundRef.current) {
+      callEndedSoundRef.current.play();
+    }
     // Close peer connection
     closePeerConnection();
 
